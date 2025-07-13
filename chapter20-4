@@ -1,0 +1,117 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <DHT.h>
+
+// تنظیمات Wi-Fi (حالت Station)
+const char* ssid_STA = "YourSSID";         // نام شبکه Wi-Fi شما
+const char* password_STA = "YourPassword";  // رمز شبکه Wi-Fi شما
+
+// تنظیمات Access Point
+const char* ssid_AP = "ESP32-SmartDevice";
+const char* password_AP = "12345678";       // حداقل 8 کاراکتر
+
+// پین‌ها
+const int ledPin = 2;
+#define DHTPIN 4
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// شیء وب سرور
+WebServer server(80);
+
+// صفحه HTML کامل
+const char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Smart Device</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial; text-align: center; padding: 20px; }
+        h1 { color: #2c3e50; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .sensor { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>ESP32 Smart Device Control</h1>
+    
+    <h2>LED Control</h2>
+    <p>Status: <strong>%LEDSTATE%</strong></p>
+    <a href="/on"><button>Turn ON</button></a>&nbsp;
+    <a href="/off"><button>Turn OFF</button></a>
+
+    <div class="sensor">
+        <h2>Sensor Data</h2>
+        <p>Temperature: %TEMP% &deg;C</p>
+        <p>Humidity: %HUM% %</p>
+    </div>
+</body>
+</html>)=====";
+
+// تابع مدیریت مسیر اصلی /
+void handleRoot() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t)) {
+    server.send(500, "text/html", "Error reading sensor");
+    return;
+  }
+
+  String html = webpage;
+  html.replace("%LEDSTATE%", (digitalRead(ledPin)) ? "ON" : "OFF");
+  html.replace("%TEMP%", String(t));
+  html.replace("%HUM%", String(h));
+
+  server.send_P(200, "text/html", html.c_str());
+}
+
+// تابع روشن کردن LED
+void handleLEDOn() {
+  digitalWrite(ledPin, HIGH);
+  handleRoot();
+}
+
+// تابع خاموش کردن LED
+void handleLEDOff() {
+  digitalWrite(ledPin, LOW);
+  handleRoot();
+}
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  Serial.begin(115200);
+  dht.begin();
+
+  // اتصال به Wi-Fi (حالت Station)
+  WiFi.begin(ssid_STA, password_STA);
+  Serial.print("در حال اتصال به Wi-Fi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ اتصال به Wi-Fi موفق!");
+  Serial.print("IP Address (STA): ");
+  Serial.println(WiFi.localIP());
+
+  // ایجاد Access Point
+  WiFi.softAP(ssid_AP, password_AP);
+  IPAddress ip = WiFi.softAPIP();
+  Serial.println("📶 Access Point فعال شد");
+  Serial.print("IP Address (AP): ");
+  Serial.println(ip);
+
+  // مدیریت درخواست‌ها
+  server.on("/", handleRoot);
+  server.on("/on", handleLEDOn);
+  server.on("/off", handleLEDOff);
+
+  server.begin();
+  Serial.println("🟢 وب سرور شروع شد");
+}
+
+void loop() {
+  server.handleClient();
+}
