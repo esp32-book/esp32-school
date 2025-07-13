@@ -1,0 +1,24 @@
+const int threshold = 30; // مقدار آستانه لمس
+const int ledPin = 2;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+  Serial.begin(115200);
+}
+
+void loop() {
+  int touchValue = touchRead(T3);
+ 
+  Serial.println(touchValue);
+
+  if (touchValue < threshold) {
+    digitalWrite(ledPin, HIGH);
+    Serial.println("touch...");
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+
+  delay(100);
+}
+
