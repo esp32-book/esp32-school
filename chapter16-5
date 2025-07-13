@@ -1,0 +1,60 @@
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 5
+#define RST_PIN 16
+
+byte readd[4];
+MFRC522 rfid(SS_PIN, RST_PIN);
+
+void setup() {
+  SPI.begin();
+  rfid.PCD_Init();
+  Serial.begin(115200);
+}
+
+void loop() {
+  while (rfid.PICC_IsNewCardPresent()) {
+    if (!rfid.PICC_ReadCardSerial()) return;
+
+    // نمایش UID کارت
+    for (int i = 0; i < 4; i++) {
+      readd[i] = rfid.uid.uidByte[i];
+      Serial.print(readd[i]);
+      Serial.print(".");
+    }
+    Serial.println(";");
+
+    byte block = 4;
+    MFRC522::StatusCode status;
+    MFRC522::MIFARE_Key key;
+
+    // تنظیم کلید پیش‌فرض
+    for (byte i = 0; i < 6; i++) key.keyByte[i] = 0xFF;
+
+    byte buffer[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 0 };
+
+    // احراز هویت کارت برای بلوک مورد نظر
+    status = rfid.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
+    if (status != MFRC522::STATUS_OK) {
+      Serial.print(F("⚠️ PCD_Authenticate() خطا: "));
+      Serial.println(rfid.GetStatusCodeName(status));
+      return;
+    }
+
+    // نوشتن داده در کارت
+    status = rfid.MIFARE_Write(block, buffer, 16);
+    if (status != MFRC522::STATUS_OK) {
+      Serial.print(F("⚠️ MIFARE_Write() خطا: "));
+      Serial.println(rfid.GetStatusCodeName(status));
+    } else {
+      Serial.println(F("✅ داده با موفقیت نوشته شد."));
+    }
+
+    delay(1000);
+    rfid.PICC_HaltA();        // توقف ارتباط با کارت
+    rfid.PCD_StopCrypto1();   // توقف رمزنگاری
+  }
+}
+
+
