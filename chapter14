@@ -1,0 +1,34 @@
+#include "BluetoothSerial.h"
+
+BluetoothSerial myBT;
+
+const int ledPin = 2;     // LED متصل به GPIO 2
+char receivedChar = ' ';  // متغیر برای ذخیره کاراکتر دریافتی
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW); // اولیه خاموش
+
+  myBT.begin("ESP32_Controller "); // نام دستگاه بلوتوثی
+  Serial.begin(115200);
+  Serial.println("ESP32 conected...");
+}
+
+void loop() {
+  if (myBT.available()) {
+    receivedChar = myBT.read(); // خواندن یک کاراکتر
+
+    Serial.print("کاراکتر دریافتی: ");
+    Serial.println(receivedChar);
+
+    if (receivedChar == '1') {
+      digitalWrite(ledPin, HIGH);
+      myBT.println("LED on");
+    } else if (receivedChar == '0') {
+      digitalWrite(ledPin, LOW);
+      myBT.println("LED off");
+    } 
+  }
+
+  delay(20); // ثبات در حلقه
+}
