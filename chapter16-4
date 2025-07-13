@@ -1,0 +1,121 @@
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 5    // SDA
+#define RST_PIN 27  // RST
+
+MFRC522 rfid(SS_PIN, RST_PIN); // شیء از کلاس MFRC522
+
+// ساختار بازیکن
+struct Player {
+  byte uid[4];     // UID کارت
+  int balance;      // اعتبار
+};
+
+// لیست بازیکنان (حداکثر 8 کارت)
+Player players[8];
+int playerCount = 0;
+
+void setup() {
+  Serial.begin(115200);
+  SPI.begin();
+  rfid.PCD_Init();
+
+  Serial.println("🎮 کارت‌خوان بازی Monopoly ساده — شروع شد");
+  Serial.println("📌 لطفاً یک کارت را نزدیک کنید...");
+}
+
+void loop() {
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // تشخیص کارت
+  Serial.print("📜 UID : ");
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    Serial.print(rfid.uid.uidByte[i], HEX);
+  }
+  Serial.println();
+
+  // بررسی اینکه آیا کارت قبلا ثبت شده؟
+  int index = findPlayerIndex(rfid.uid.uidByte);
+
+  if (index == -1) {
+    addNewPlayer(rfid.uid.uidByte);
+    index = playerCount - 1;
+    Serial.println("✅ کارت جدید شناسایی شد و به لیست اضافه گردید.");
+  } else {
+    Serial.println("🟢 کارت شناخته شده. به منو خوش آمدید:");
+    showMenu(index);
+  }
+
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+}
+
+// یافتن شاخص کارت در لیست
+int findPlayerIndex(byte *uid) {
+  for (int i = 0; i < playerCount; i++) {
+    bool match = true;
+    for (int j = 0; j < 4; j++) {
+      if (players[i].uid[j] != uid[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return i;
+  }
+  return -1;
+}
+
+// اضافه کردن کارت جدید
+void addNewPlayer(byte *uid) {
+  if (playerCount >= 8) {
+    Serial.println("⚠️ حداکثر تعداد کارت (8 عدد) رسیده است.");
+    return;
+  }
+
+  for (int i = 0; i < 4; i++) {
+    players[playerCount].uid[i] = uid[i];
+  }
+  players[playerCount].balance = 1500; // اعتبار اولیه بازیکن
+  playerCount++;
+
+  Serial.print("➕ بازیکن جدید با اعتبار $");
+  Serial.println(players[playerCount - 1].balance);
+}
+
+// نمایش منوی تعاملی
+void showMenu(int index) {
+  Serial.println("🔢 چه کاری می‌خواهید انجام دهید؟");
+  Serial.println("1. نمایش موجودی");
+  Serial.println("2. افزایش موجودی");
+  Serial.println("3. کاهش موجودی");
+
+  while (true) {
+    if (Serial.available()) {
+      char choice = Serial.read();
+      switch (choice) {
+        case '1':
+          Serial.print("💰 موجودی شما: $");
+          Serial.println(players[index].balance);
+          return;
+        case '2':
+          players[index].balance += 500;
+          Serial.print("💸 موجودی جدید: $");
+          Serial.println(players[index].balance);
+          return;
+        case '3':
+          players[index].balance -= 500;
+          if (players[index].balance < 0) players[index].balance = 0;
+          Serial.print("🛒 موجودی جدید: $");
+          Serial.println(players[index].balance);
+          return;
+        default:
+          Serial.println("❌ گزینه نامعتبر است. دوباره انتخاب کنید.");
+          break;
+      }
+    }
+  }
+}
