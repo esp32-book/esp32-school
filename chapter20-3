@@ -1,0 +1,72 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// اطلاعات شبکه Wi-Fi
+const char* ssid = "YourSSID";
+const char* password = "YourPassword";
+
+
+// پین LED
+const int ledPin = 2;
+
+// شیء وب سرور - پورت 80
+WebServer server(80);
+
+// صفحه HTML با دو دکمه
+const char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
+<html>
+<head><title>ESP32 LED Control</title></head>
+<body>
+<h1>LED CONTROL With Web Server</h1>
+<p>LED Status: <span id="status">%STATE%</span></p>
+<a href="/on"><button> ON </button></a>&nbsp;
+<a href="/off"><button>Off</button></a>
+</body>
+</html>)=====";
+
+// تابع مدیریت مسیر اصلی /
+void handleRoot() {
+  String html = webpage;
+  html.replace("%STATE%", (digitalRead(ledPin)) ? "ON" : "Off");
+  server.send_P(200, "text/html", html.c_str());
+}
+
+// تابع مدیریت /on
+void handleLEDOn() {
+  digitalWrite(ledPin, HIGH);
+  handleRoot();
+}
+
+// تابع مدیریت /off
+void handleLEDOff() {
+  digitalWrite(ledPin, LOW);
+  handleRoot();
+}
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+  Serial.print("در حال اتصال به Wi-Fi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ اتصال موفق!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", handleRoot);
+  server.on("/on", handleLEDOn);
+  server.on("/off", handleLEDOff);
+
+  server.begin();
+  Serial.println("🟢 وب سرور شروع شد");
+}
+
+void loop() {
+  server.handleClient();
+}
