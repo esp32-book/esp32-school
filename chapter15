@@ -1,0 +1,31 @@
+#include "esp_sleep.h"
+
+const int wakeUpPin = 27;            // پین دکمه فشاری (RTC Pin)
+const int ledPin = LED_BUILTIN;
+
+
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  
+  // خواندن وضعیت فعلی LED از حافظه RTC (اختیاری)
+  bool currentState = digitalRead(ledPin);
+
+  // تنظیم دکمه به عنوان منبع بیدار کننده
+  pinMode(wakeUpPin, INPUT_PULLUP); // استفاده از Pull-Up داخلی
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_27, LOW); // بیدار شدن با فشار دادن دکمه
+
+  // معکوس کردن وضعیت LED
+  digitalWrite(ledPin, !currentState);
+
+  // صبر چند ثانیه
+  delay(3000); // 3 ثانیه بعد از بیداری
+
+  // بازگشت به حالت Deep Sleep
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // این بخش هیچ وقت اجرا نمی‌شود
+}
+
