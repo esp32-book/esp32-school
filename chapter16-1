@@ -1,0 +1,39 @@
+
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 5     // پایه SDA ماژول RC522 به GPIO 5 متصل شده
+#define RST_PIN 27   // پایه RST ماژول به GPIO 27 متصل شده
+
+MFRC522 rfid(SS_PIN, RST_PIN);  // ایجاد شیء برای کنترل RC522
+
+void setup() {
+  Serial.begin(115200);     // شروع ارتباط سریال با baud rate بالا
+  SPI.begin();              // شروع پروتکل SPI
+  rfid.PCD_Init();          // مقداردهی اولیه ماژول RC522
+  Serial.println("منتظر کارت...");
+}
+
+void loop() {
+  // بررسی وجود کارت جدید
+  if (!rfid.PICC_IsNewCardPresent()) {
+    return;
+  }
+
+  // بررسی اینکه آیا امکان خواندن UID وجود دارد
+  if (!rfid.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // نمایش UID کارت در سریال مانیتور
+  Serial.print("UID = ");
+  for (byte i = 0; i < rfid.uid.size; i++) {
+   
+    Serial.print(rfid.uid.uidByte[i], HEX);
+    Serial.print(":");
+  }
+  Serial.println();
+
+  // پایان ارتباط با کارت
+  rfid.PICC_HaltA();
+}
