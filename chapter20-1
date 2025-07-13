@@ -1,0 +1,43 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// تنظیمات شبکه AP
+const char* ssid = "ESP32-WebServer";     // نام شبکه Wi-Fi که ESP32 ایجاد می‌کند
+const char* password = "123456789";        // رمز عبور شبکه (حداقل 8 کاراکتر)
+
+// شیء وب سرور - پورت پیش‌فرض 80
+WebServer server(80);
+
+// تابع مدیریت مسیر اصلی /
+void handleRoot() {
+  server.send(200, "text/plain", "Hello from ESP32 Web Server!");
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // راه‌اندازی حالت AP
+  WiFi.softAP(ssid, password);
+
+  // نمایش IP اختصاصی AP
+  IPAddress ip = WiFi.softAPIP();
+  Serial.println("\n📶 Access Point فعال شد");
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+
+  // تنظیم تابع برای مسیر اصلی /
+  server.on("/", handleRoot);
+
+  // شروع وب سرور
+  server.begin();
+  Serial.println("🟢 وب سرور شروع شد");
+
+  // پیغام کاربری
+  Serial.print("به این شبکه Wi-Fi وصل شوید: ");
+  Serial.println(ssid);
+  Serial.print("رمز: ");
+  Serial.println(password);
+}
+void loop() {
+  server.handleClient(); // مدیریت درخواست‌ها
+}
