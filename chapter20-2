@@ -1,0 +1,57 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// اطلاعات شبکه Wi-Fi
+const char* ssid = "YourSSID";       // نام شبکه Wi-Fi خود را بنویسید
+const char* password = "YourPassword"; // رمز شبکه Wi-Fi خود را بنویسید
+
+// شیء وب سرور - پورت پیش‌فرض 80
+WebServer server(80);
+
+ //   سادهHTML صفحه 
+ // (با استفاده از PROGMEM برای ذخیره در حافظه Flash)
+const char webpage[] PROGMEM = R"=====(<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Web Server</title>
+</head>
+<body>
+<center>
+    <h1> Hello from  ESP32!</h1>
+    <p>This page created by ESP32</p>
+</center>
+</body>
+</html>)=====";
+
+// تابع مدیریت مسیر اصلی /
+void handleRoot() {
+  server.send_P(200, "text/html", webpage); // ارسال از حافظه Flash
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // اتصال به Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.print("در حال اتصال به Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ اتصال موفق به Wi-Fi");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // تنظیم تابع برای مسیر اصلی /
+  server.on("/", handleRoot);
+
+  // شروع به کار وب سرور
+  server.begin();
+  Serial.println("🟢 وب سرور شروع شد");
+}
+
+void loop() {
+  server.handleClient(); // مدیریت درخواست‌ها
+}
+
+
