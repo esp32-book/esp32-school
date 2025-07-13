@@ -1,0 +1,34 @@
+int trigPin = 5;
+int echoPin = 18;
+
+unsigned long duration;
+float distance;
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  Serial.begin(115200);
+}
+
+void loop() {
+  // ارسال پالس شروع
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // خواندن زمان بازتاب
+  duration = pulseIn(echoPin, HIGH);
+
+  // محاسبه فاصله
+  distance = (duration / 2.0) * 0.0343;
+
+  // نمایش روی سریال مانیتور
+  Serial.print("فاصله: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  delay(500); // هر نیم ثانیه یکبار اندازه‌گیری
+}
+
