@@ -1,0 +1,44 @@
+
+int trigPin = 5;
+int echoPin = 18;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  unsigned long startTime, endTime, duration;
+  float distance;
+
+  // ارسال پالس 10 میکروثانیه‌ای برای فعال‌سازی سنسور
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // صبر تا زمانی که Echo HIGH شود (شروع دریافت پالس)//
+  while (digitalRead(echoPin) == LOW);
+  startTime = micros();  // زمان شروع دریافت
+
+  // صبر تا زمانی که Echo LOW شود (پایان دریافت پالس)//
+  while (digitalRead(echoPin) == HIGH);
+  endTime = micros();  // زمان پایان دریافت
+
+  // محاسبه مدت زمان رفت و برگشت پالس
+  duration = endTime - startTime;
+
+  // محاسبه فاصله (زمان به میکروثانیه، سرعت صوت ~343m/s)
+  distance = (duration / 2)*.0343;  // تبدیل به سانتی‌متر
+
+  // نمایش نتیجه
+  Serial.print("فاصله: ");
+  Serial.print(distance);
+  Serial.println(" سانتی‌متر");
+
+  delay(500);
+}
+
+
