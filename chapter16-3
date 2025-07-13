@@ -1,0 +1,107 @@
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 5
+#define RST_PIN 27
+#define LED_PIN 2
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+
+// تعریف کارت مدیریت
+byte masterUID[4] = {0x62, 0xFE, 0x17, 0x51};
+
+// آرایه برای ذخیره کارت‌های مجاز (حداکثر 10 کارت)
+byte allowedCards[10][4];
+int allowedCount = 0;
+
+void setup() {
+  Serial.begin(115200);
+  SPI.begin();
+  rfid.PCD_Init();
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  Serial.println(“System ready. Waiting for a card...”);
+}
+
+void loop() {
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // نمایش UID کارت
+  Serial.print(“Card UID: “);
+  for (byte I = 0; I < rfid.uid.size; i++) {
+    Serial.print(rfid.uid.uidByte[i] < 0x10 ? “ 0” : “ “);
+    Serial.print(rfid.uid.uidByte[i], HEX);
+  }
+  Serial.println();
+
+  if (isMasterCard(rfid.uid.uidByte)) {
+    Serial.println(“🔑 Master card detected. Entering registration mode for 5 seconds...”);
+    registerNewCards();
+  } else if (isAllowedCard(rfid.uid.uidByte)) {
+    Serial.println(“✅ Access granted. Welcome!”);
+    digitalWrite(LED_PIN, HIGH);
+    delay(3000);
+    digitalWrite(LED_PIN, LOW);
+  } else {
+    Serial.println(“⛔ Access denied.”);
+  }
+
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+}
+
+///////  تابع   بررسی کارت مدیریت
+bool isMasterCard(byte *uid) {
+  for (int I = 0; I < 4; i++) {
+    if (uid[i] != masterUID[i]) return false;
+  }
+  return true;
+}
+
+/// تابع بررسی کارت مجاز
+bool isAllowedCard(byte *uid) {
+  for (int I = 0; I < allowedCount; i++) {
+    bool match = true;
+    for (int j = 0; j < 4; j++) {
+      if (uid[j] != allowedCards[i][j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return true;
+  }
+  return false;
+}
+
+// ثبت کارت‌های جدید
+void registerNewCards() {
+  unsigned long startTime = millis();
+  while (millis() – startTime < 5000) {
+    if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
+      continue;
+    }
+
+    if (!isAllowedCard(rfid.uid.uidByte)) {
+      if (allowedCount < 10) {
+        for (int I = 0; I < 4; i++) {
+          allowedCards[allowedCount][i] = rfid.uid.uidByte[i];
+        }
+        allowedCount++;
+        Serial.println(“✅ New card registered.”);
+      } else {
+        Serial.println(“⚠️ Card list is full.”);
+      }
+    } else {
+      Serial.println(“ℹ️ Card already registered.”);
+    }
+
+    rfid.PICC_HaltA();
+    rfid.PCD_StopCrypto1();
+    delay(500);
+  }
+  Serial.println(“⏱ Registration mode ended.”);
+}
