@@ -1,0 +1,24 @@
+const int potPin = 4;     // پین پتانسیومتر
+const int ledPin = 13;     // پین LED
+int potValue = 0;
+int pwmValue = 0;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  ledcSetup(0, 5000, 12);  // تنظیمات PWM
+  ledcAttachPin(ledPin, 0); // اختصاص پین به کانال 0
+  Serial.begin(115200);
+}
+
+void loop() {
+  potValue = analogRead(potPin);            // خواندن مقدار آنالوگ
+  pwmValue = map(potValue, 0, 4095, 0, 255); // مپ کردن به Duty Cycle
+
+  ledcWrite(0, pwmValue); // کنترل نور LED
+
+  Serial.print("Pot Value: ");
+  Serial.print(potValue);
+  Serial.print(" | PWM Value: ");
+  Serial.println(pwmValue);
+  delay(100);
+}
