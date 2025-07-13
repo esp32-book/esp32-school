@@ -1,0 +1,62 @@
+#include <WiFi.h>
+#include "AdafruitIO_WiFi.h"
+
+/*******************************
+ * تنظیمات حساب Adafruit IO
+ *******************************/
+#define IO_USERNAME    "your_adafruit_username"   // نام کاربری شما
+#define IO_KEY         "your_aio_key"             // کلید API حساب شما
+
+/*******************************
+ * تنظیمات Wi-Fi
+ *******************************/
+const char *WIFI_SSID = "Your_WiFi_SSID";      // نام شبکه Wi-Fi محلی
+const char *WIFI_PASS  = "Your_WiFi_Password"; // رمز شبکه Wi-Fi
+
+/*******************************
+ * ایجاد اتصال به Adafruit IO
+ *******************************/
+AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
+
+/*******************************
+ * Feed مورد استفاده
+ *******************************/
+AdafruitIO_Feed *testFeed = io.feed("test-data");
+
+/*******************************
+ * setup()
+ *******************************/
+void setup() {
+  Serial.begin(115200);
+
+  Serial.print("در حال اتصال به Wi-Fi");
+  io.connect();
+
+  // منتظر بمان تا به Wi-Fi متصل شویم
+  while(io.status() != AIO_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\n✅ متصل شد!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+/*******************************
+ * loop()
+ *******************************/
+void loop() {
+  if (!io.connected()) {
+    io.connect(); // در صورت قطع شدن اتصال، دوباره وصل شو
+  }
+
+  int value = 42; // داده ثابت برای تست
+  Serial.print("در حال ارسال داده: ");
+  Serial.println(value);
+
+  testFeed->save(value); // ارسال داده به Adafruit IO
+
+  delay(5000); // هر 5 ثانیه یکبار
+}
+
