@@ -1,0 +1,60 @@
+#include <Preferences.h>
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 5
+#define RST_PIN 27
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+Preferences prefs;
+
+void setup() {
+  Serial.begin(115200);
+  SPI.begin();
+  rfid.PCD_Init();
+  Serial.println("منتظر کارت...");
+}
+
+void loop() {
+  // اگر کارتی شناسایی نشد، برو بیرون
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial())
+    return;
+
+  byte* uid = rfid.uid.uidByte;
+  byte uidSize = rfid.uid.size;
+
+  Serial.print("کارت شناسایی شد. UID: ");
+  for (byte i = 0; i < uidSize; i++) {
+    Serial.printf("%02X ", uid[i]);
+  }
+  Serial.println();
+
+  // ذخیره UID در حافظه (فقط اگر بار اول باشد یا تغییر کرده باشد)
+  prefs.begin("cards", false);
+
+  byte storedUID[4] = {0};
+  prefs.getBytes("master_uid", storedUID, 4);
+
+  bool isDifferent = false;
+  for (int i = 0; i < 4; i++) {
+    if (uid[i] != storedUID[i]) {
+      isDifferent = true;
+      break;
+    }
+  }
+
+  if (isDifferent) {
+    prefs.putBytes("master_uid", uid, 4);
+    Serial.println("✅ UID جدید ذخیره شد");
+  } else {
+    Serial.println("🟢 این UID قبلاً ذخیره شده");
+  }
+
+  prefs.end();
+
+  delay(2000);  // تأخیر برای جلوگیری از ثبت تکراری
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+}
+
+
