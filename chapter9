@@ -1,0 +1,67 @@
+
+#include <Wire.h>
+#include <RTClib.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+
+Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+RTC_DS1307 rtc;
+
+// نام روزهای هفته به انگلیسی
+const char* weekDays[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
+void setup() {
+  if (!display.begin(0x3C)) {
+    for (;;); // توقف در صورت عدم تشخیص OLED
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(0, 0);
+  display.println("Initializing...");
+  display.display();
+
+  if (!rtc.begin()) {
+    display.println("RTC not found!");
+    display.display();
+    while (1); // توقف در صورت عدم تشخیص RTC
+  }
+
+  if (!rtc.isrunning()) {
+    display.println("RTC NOT running");
+    display.display();
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); // تنظیم زمان فعلی
+  }
+}
+
+void loop() {
+  DateTime now = rtc.now();
+
+  display.clearDisplay();
+
+  // نمایش روز هفته
+  display.setTextSize(1);
+  display.setCursor(30, 10);
+  display.print(weekDays[now.dayOfTheWeek()]);
+  
+  // نمایش تاریخ میلادی
+  display.setTextSize(1);
+  display.setCursor(25, 20);
+  display.printf("%04d/%02d/%02d", now.year(), now.month(), now.day());
+
+  // نمایش ساعت
+  display.setTextSize(1);
+  display.setCursor(25, 30);
+  display.printf("%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+
+  display.display();
+
+  delay(1000);
+}
+
+
