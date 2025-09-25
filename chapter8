@@ -1,1 +1,106 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
+#include <Keypad.h>
+
+// تنظیمات Keypad 4x4
+const byte ROWS = 4;
+const byte COLS = 4;
+
+char hexaKeys[ROWS][COLS] = {
+  {1,4,7,17},
+  {2,5,8,10},
+  {3,6,9,18},
+  {14,15,16,19}
+};
+
+// پین ردیف‌ها (Rows)
+byte rowPins[ROWS] = {32, 33, 25, 26};
+
+// پین ستون‌ها (Columns)
+byte colPins[COLS] = {27, 14, 12, 13};
+
+Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, COLS, ROWS); 
+
+// تنظیمات OLED
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SH1106G oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// تنظیمات رمز
+int correctPass = 1234; // رمز عبور ثابت
+
+// LED شبیه‌سازی درب (اختیاری)
+const int ledPin = 2; // GPIO 2 — برای LED
+int  k,n,i;
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  // راه‌اندازی OLED
+  oled.begin(0x3C);
+  oled.clearDisplay();
+  oled.setTextColor(SH110X_WHITE);
+
+  oled.display();
+
+ 
+}
+
+void loop() {
+            oled.setTextSize(2);
+            oled.setCursor(0, 0);
+            oled.print("Enter Pass");
+            oled.display();
+             char Key = customKeypad.getKey();
+             if (Key != NO_KEY){
+                                k=Key;
+                                if(Key==10)
+                                        k=0;
+                                    
+                                if(k<10)  
+                                {   
+                                n=n*10+k; 
+                                i=i+1;                         
+                                }
+                                oled.setTextSize(2);
+                                oled.setCursor(0,30);
+                                oled.print(n);
+                                oled.display();
+                                if(i>3)
+                                if(n==1234)
+                                   {
+                                    oled.clearDisplay();
+                                    oled.setTextSize(2);
+                                    oled.setCursor(0,30);
+                                    oled.print("corected");
+                                    oled.display();
+                                    digitalWrite(ledPin, HIGH);
+                                     // شبیه‌سازی باز شدن درب
+                                    delay(2000);
+                                    i=0;
+                                    n=0;
+                                    k=0;
+                                    oled.clearDisplay();
+                                     }
+                                  else
+                                     {
+                                      oled.clearDisplay();
+                                      oled.setTextSize(1);
+                                      oled.setCursor(0,30);
+                                      oled.print("Wrong");
+                                     oled.display();
+                                     digitalWrite(ledPin, LOW); 
+                                      // درب بسته باقی می‌ماند
+                                       delay(2000);
+                                       i=0;
+                                       n=0;
+                                       k=0;
+                                       oled.clearDisplay();
+                                        }
+
+                                }
+            }
+
 
