@@ -1,4 +1,4 @@
-
+//  خواننده گرامی لطفا فایل read me  را مطالعه بفرمایید
 #include <LiquidCrystal.h>
 #include <DHTesp.h>
 // تنظیمات LCD (اتصال 4 بیتی)
