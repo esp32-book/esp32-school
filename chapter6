@@ -1,1 +1,34 @@
 
+#include <LiquidCrystal.h>
+#include <DHTesp.h>
+// تنظیمات LCD (اتصال 4 بیتی)
+const int rs = 14, en = 13, d4 = 4, d5 = 5, d6 = 18, d7 = 19;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+// تنظیمات سنسور DHT11
+DHTesp dht;
+void setup() {
+// راه‌اندازی سنسور DHT11
+dht.setup(23, DHTesp::AUTO_DETECT); // فرض: سنسور به GPIO 23 متصل است
+// راه‌اندازی LCD
+lcd.begin(16, 2); // LCD 16 ستونی و 2 خطی
+lcd.setCursor(0, 0);
+lcd.print("Starting...");
+delay(1000);
+lcd.clear();
+}
+void loop() {
+// خواندن داده‌های دما و رطوبت
+float temperature = dht.getTemperature();
+float humidity = dht.getHumidity();
+// نمایش داده‌ها روی LCD
+lcd.setCursor(0, 0);
+lcd.print("Temp: ");
+lcd.print(temperature);
+lcd.print((char)223); // علامت درجه (°)
+lcd.print("C");
+lcd.setCursor(0, 1);
+lcd.print("Humi: ");
+lcd.print(humidity);
+lcd.print("%");
+delay(2000); // هر 2 ثانیه یکبار به‌روزرسانی
+}
