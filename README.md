@@ -38,9 +38,11 @@ https://wokwi.com/projects/442994885538964481
 https://wokwi.com/projects/442995127112062977
 
 10- صفحه کلید تک رقمی
+
 https://wokwi.com/projects/442956796231770113
 
 11- صفحه کلید چند رقمی
+
 https://wokwi.com/projects/443530676388383745
 
 12- قفل رمز دار
